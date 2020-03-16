@@ -107,65 +107,6 @@
   <body class='container-fluid'>
   <?php
 
-    // --------------- INSTALLATION ---------------
-    if(isset($_GET['installation'])) {
-      if(isInstalled($bdd) == true) {
-        printError('OpenVPN-admin is already installed. Redirection.');
-        header( "refresh:3;url=index.php?admin" );
-        exit(-1);
-      }
-
-      // If the user sent the installation form
-      if(isset($_POST['admin_username'])) {
-        $admin_username = $_POST['admin_username'];
-        $admin_pass = $_POST['admin_pass'];
-        $admin_repeat_pass = $_POST['repeat_admin_pass'];
-
-        if($admin_pass != $admin_repeat_pass) {
-          printError('The passwords do not correspond. Redirection.');
-          header( "refresh:3;url=index.php?installation" );
-          exit(-1);
-        }
-
-        // Create the initial tables
-        $migrations = getMigrationSchemas();
-        foreach ($migrations as $migration_value) {
-          $sql_file = dirname(__FILE__) . "/sql/schema-$migration_value.sql";
-          try {
-            $sql = file_get_contents($sql_file);
-            $bdd->exec($sql);
-          }
-          catch (PDOException $e) {
-            printError($e->getMessage());
-            exit(1);
-          }
-
-          unlink($sql_file);
-
-          // Update schema to the new value
-          updateSchema($bdd, $migration_value);
-        }
-
-        // Generate the hash
-        $hash_pass = hashPass($admin_pass);
-
-        // Insert the new admin
-        $req = $bdd->prepare('INSERT INTO admin (admin_id, admin_pass) VALUES (?, ?)');
-        $req->execute(array($admin_username, $hash_pass));
-
-        rmdir(dirname(__FILE__) . '/sql');
-        printSuccess('Well done, OpenVPN-Admin is installed. Redirection.');
-        header( "refresh:3;url=index.php?admin" );
-      }
-      // Print the installation form
-      else {
-        require(dirname(__FILE__) . '/include/html/menu.php');
-        require(dirname(__FILE__) . '/include/html/form/installation.php');
-      }
-
-      exit(-1);
-    }
-
     // --------------- CONFIGURATION ---------------
     if(!isset($_GET['admin'])) {
       if(isset($error) && $error == true)
