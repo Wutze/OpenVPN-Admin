@@ -12,7 +12,7 @@ Administrate its OpenVPN with a web interface (logs visualisations, users managi
   * GNU/Linux with Bash and root access
   * Fresh install of OpenVPN
   * Web server (NGinx, Apache...)
-  * MySQL
+  * MariaDB
   * PHP >= 5.5 with modules:
     * zip
     * pdo_mysql
@@ -22,70 +22,55 @@ Administrate its OpenVPN with a web interface (logs visualisations, users managi
   * sed
   * curl
 
-### Debian 8 Jessie
+### Debian 10 Buster
 
 ````
-# apt-get install openvpn apache2 php5-mysql mysql-server php5 nodejs unzip git wget sed npm curl
-# npm install -g bower
-# ln -s /usr/bin/nodejs /usr/bin/node
-````
-
-### Debian 9 Stretch
-
-In order to install `npm`, [stretch-backports need to be added to your sources.list](https://backports.debian.org/Instructions/#index2h2).
-
-````
-# apt-get install -t stretch-backports npm nodejs
-# apt-get install openvpn apache2 php-mysql mysql-server php-zip php unzip git wget sed curl
+# apt-get install openvpn apache2 php-mysql mariadb-server php-zip php unzip git wget sed curl git -y
+# apt install npm nodejs -y
 # npm install -g bower
 ````
-
-### CentOS 7
-
-````
-# yum install epel-release
-# yum install openvpn httpd php-mysql mariadb-server php nodejs unzip git wget sed npm
-# npm install -g bower
-# systemctl enable mariadb
-# systemctl start mariadb
-````
-
-### Other distribution... (PR welcome)
 
 ## Tests
 
-Only tested on Debian Jessie. Feel free to open issues.
+Only tested on Debian 10/Buster, PHP 7.3.x, 10.3.22-MariaDB.
+Feel free to open issues.
 
 ## Installation
 
   * Setup OpenVPN and the web application:
 
-        $ cd ~/my_coding_workspace
-        $ git clone https://github.com/Chocobozzz/OpenVPN-Admin openvpn-admin
+        $ cd /opt/
+        $ mkdir /srv/www
+        $ git clone https://github.com/wutze/OpenVPN-Admin openvpn-admin
         $ cd openvpn-admin
-        # ./install.sh /var/www www-data www-data
+        # ./install.sh /srv/www www-data www-data
 
   * Setup the web server (Apache, NGinx...) to serve the web application.
-  * Create the admin of the web application by visiting `http://your-installation/index.php?installation`
 
-## Usage
+## Apache Example
+````
+<VirtualHost *:80>
 
-  * Start OpenVPN on the server (for example `systemctl start openvpn@server`)
-  * Connect to the web application as an admin
-  * Create an user
-  * User get the configurations files via the web application (and put them in */etc/openvpn*)
-  * Users on GNU/Linux systems, run `chmod +x /etc/openvpn/update-resolv.sh` as root
-  * User run OpenVPN (for example `systemctl start openvpn@client`)
+        ServerAdmin webmaster@localhost
+        DocumentRoot /srv/www/openvpn-admin
 
-## Update
+        ErrorLog ${APACHE_LOG_DIR}/error.log
+        CustomLog ${APACHE_LOG_DIR}/access.log combined
 
-    $ git pull origin master
-    # ./update.sh /var/www
+AccessFileName .htaccess
+<FilesMatch "^\.ht">
+        Require all denied
+</FilesMatch>
 
-## Desinstall
-It will remove all installed components (OpenVPN keys and configurations, the web application, iptables rules...).
+<Directory /srv/www/openvpn-admin/>
+        Options Indexes FollowSymLinks
+        AllowOverride all
+        Require all granted
+</Directory>
 
-    # ./desinstall.sh /var/www
+</VirtualHost>
+
+````
 
 ## Use of
 
