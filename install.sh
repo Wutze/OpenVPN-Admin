@@ -1,4 +1,81 @@
 #!/bin/bash
+#
+# this File is part of OpenVPN-Admin
+#
+# GNU AFFERO GENERAL PUBLIC LICENSE V3
+# Original Script from: https://github.com/Chocobozzz/OpenVPN-Admin
+# Parts of the programming from pi-hole were used as templates.
+#
+# changes (c) by Wutze 2020 Version 0.5
+#
+# Twitter -> @HuWutze
+
+# debug
+#set -x
+
+## Fix Debian 10 Fehler
+export PATH=$PATH:/usr/sbin:/sbin
+
+## set static vars
+config="config.conf"
+coltable=/opt/install/COL_TABLE
+
+## init screen
+# Find the rows and columns will default to 80x24 if it can not be detected
+screen_size=$(stty size 2>/dev/null || echo 24 80)
+rows=$(echo "${screen_size}" | awk '{print $1}')
+columns=$(echo "${screen_size}" | awk '{print $2}')
+
+# Divide by two so the dialogs take up half of the screen, which looks nice.
+r=$(( rows / 2 ))
+c=$(( columns / 2 ))
+# Unless the screen is tiny
+r=$(( r < 20 ? 20 : r ))
+c=$(( c < 70 ? 70 : c ))
+
+# If the color table file exists,
+if [[ -f "${coltable}" ]]; then
+	# source it
+	source ${coltable}
+# Otherwise,
+else
+	# Set these values so the installer can still run in color
+	COL_NC='\e[0m' # No Color
+	COL_LIGHT_GREEN='\e[1;32m'
+	COL_LIGHT_RED='\e[1;31m'
+	COL_BLUE='\e[94m'
+	TICK="[${COL_LIGHT_GREEN}✓${COL_NC}]"
+	CROSS="[${COL_LIGHT_RED}✗${COL_NC}]"
+	INFO="[i]"
+	# shellcheck disable=SC2034
+	DONE="${COL_LIGHT_GREEN} done!${COL_NC}"
+	OVER="\\r\\033[K"
+fi
+
+## Intro with colored Logo
+intro(){
+	echo -e "${COL_LIGHT_RED}
+■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
+${COL_BLUE}        ◢■◤
+      ◢■◤
+    ◢■◤  ${COL_LIGHT_RED}M I C R O - M A D E / H O M E - ${COL_NC}V P N A D M I N${COL_LIGHT_RED} - S E R V E R${COL_BLUE}
+  ◢■◤                                     【ツ】 © 2018-20
+◢■■■■■■■■■■■■■■■■■■■■◤                        ${COL_LIGHT_RED}L   I   N   U   X
+■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■${COL_NC}
+"
+}
+
+# read config.conf
+# you must copy config.conf.example to config.conf and edit this file
+if [[ -f "${config}" ]]; then
+	# source it
+	source ${config}
+# Otherwise,
+else
+  echo "Missing configuration"
+  echo "you must copy config.conf.example to config.conf and edit this file"
+  exit
+fi
 
 print_help () {
   echo -e "./install.sh www_basedir user group"
@@ -7,11 +84,69 @@ print_help () {
   echo -e "\tgroup:    Group of the web application"
 }
 
+#  
+#  name: control_box
+#  @param $? + Description
+#  @return echo ok or break
+#  
+control_box(){
+  exitstatus=$?
+  if [ $exitstatus = 0 ]; then
+      print_out 1 "Input Ok: ${2}"
+  else
+      print_out 0 "input break: ${2}"
+      exit
+  fi
+}
+
+#  
+#  name: print_out
+#  @param [1|0|i|d|r] [Text]]
+#  @return formated Text with red cross, green tick, "i"nfo, "d"one Message or need input with "r"
+#  
+print_out(){
+	case "${1}" in
+		1)
+		echo -e " ${TICK} ${2}"
+		;;
+		0)
+		echo -e " ${CROSS} ${2}"
+		;;
+		i)
+		echo -e " ${INFO} ${2}"
+		;;
+		d)
+		echo -e " ${DONE} ${2}"
+		;;
+		r)	read -rsp " ${2}"
+			echo "\n"
+		;;
+	esac
+}
+
+# you can only install with root privileges
+# check this
+check_user(){
+	# Must be root to install
+	local str="Root user check"
+	if [[ "${EUID}" -eq 0 ]]; then
+		# they are root and all is good
+		print_out 1 "${str}"
+	else
+		print_out 0 "${str}"
+		print_out i "${COL_LIGHT_RED}Script called with non-root privileges${COL_NC}"
+		print_out i "The Installation requires root privileges to install and run"
+		print_out 1 "Installation aborted"
+		exit 1
+	fi
+}
+
+clear
+intro
+print_out i 'Press enter to continue the VPN-Admin Setup or strg+c to break...'
+print_out r ''
 # Ensure to be root
-if [ "$EUID" -ne 0 ]; then
-  echo "Please run as root"
-  exit
-fi
+check_user
 
 # Ensure there are enought arguments
 if [ "$#" -ne 3 ]; then
@@ -36,94 +171,78 @@ openvpn_admin="$www/openvpn-admin"
 
 # Check the validity of the arguments
 if [ ! -d "$www" ] ||  ! grep -q "$user" "/etc/passwd" || ! grep -q "$group" "/etc/group" ; then
-  print_help
+  print_out 0 "${str}"
+  print_out i "failed Directory, www-user or www-group on your system"
   exit
 fi
 
 base_path=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 
+## Message Boxen/Input
+print_out i "give me Input"
 
-printf "\n################## Server informations ##################\n"
+ip_server=$(whiptail --inputbox "Server Hostname/IP\nUse the name as the server is to be reached from the Internet!" 8 78 --title "Hostname/IP" 3>&1 1>&2 2>&3)
+control_box $? "Server IP"
+openvpn_proto=$(whiptail --inputbox "OpenVPN protocol (tcp or udp)\nIf you are using a VM with this installation, then select udp:" 8 78 udp --title "Protokoll" 3>&1 1>&2 2>&3)
+control_box $? "VPN Protokoll"
+server_port=$(whiptail --inputbox "OpenVPN Server Port\nDefault Port tcp or udp 1194:" 8 78 1194 --title "Server Port" 3>&1 1>&2 2>&3)
+control_box $? "OpenVPN Port"
+mysql_root_pass=$(whiptail --inputbox "MySQL Root Password\n(The password must not be empty. Please configure this before!)" 8 78 --title "DB Root PW" 3>&1 1>&2 2>&3)
+control_box $? "Root PW"
 
-read -p "Server Hostname/IP: " ip_server
+mysql_user=$(whiptail --inputbox "MySQL Username for OpenVPN Database" 8 78 --title "User DB Name" 3>&1 1>&2 2>&3)
+control_box $? "MySQL Username"
+mysql_user_pass=$(whiptail --inputbox "MySQL Userpassword for OpenVPN Database" 8 78 --title "User DB PW" 3>&1 1>&2 2>&3)
+control_box $? "MySQL User PW"
 
-read -p "OpenVPN protocol (tcp or udp) [tcp]: " openvpn_proto
+admin_user=$(whiptail --inputbox "Admin Username for Webfrontend OpenVPN-Admin" 8 78 --title "Web-Admin Name" 3>&1 1>&2 2>&3)
+control_box $? "Web Admin User"
+admin_user_pass=$(whiptail --inputbox "Admin Userpassword for Webfrontend OpenVPN-Admin" 8 78 --title "Web-Admin PW" 3>&1 1>&2 2>&3)
+control_box $? "Web Admin PW"
 
-if [[ -z $openvpn_proto ]]; then
-  openvpn_proto="tcp"
-fi
+#  
+#  name: set_mysql
+#  @param dbname dbuser dbpass
+#  @return insert new database, user and setup password
+#  
+set_mysql(){
 
-read -p "Port [443]: " server_port
+  EXPECTED_ARGS=3
+  MYSQL=`which mysql`
+  Q1="CREATE DATABASE IF NOT EXISTS $1;"
+  Q2="GRANT ALL ON $1.* TO '$2'@'localhost' IDENTIFIED BY '$3';"
+  Q3="FLUSH PRIVILEGES;"
+  SQL="${Q1}${Q2}${Q3}"
+   
+  if [ $# -ne $EXPECTED_ARGS ]
+  then
+    echo "Usage: $0 dbname dbuser dbpass"
+    exit
+  fi
+   
+  $MYSQL -uroot --password=$mysql_root_pass -e "$SQL"
 
-if [[ -z $server_port ]]; then
-  server_port="443"
-fi
+}
 
-# Get root pass (to create the database and the user)
-mysql_root_pass=""
-status_code=1
+set_mysql openvpnadmin $mysql_user $mysql_user_pass
 
-while [ $status_code -ne 0 ]; do
-  read -p "MySQL root password: " -s mysql_root_pass; echo
-  echo "SHOW DATABASES" | mysql -u root --password="$mysql_root_pass" &> /dev/null
-  status_code=$?
-done
+mysql -uroot --password=$mysql_root_pass openvpnadmin < sql/vpnadmin.dump
 
-sql_result=$(echo "SHOW DATABASES" | mysql -u root --password="$mysql_root_pass" | grep -e "^openvpn-admin$")
-# Check if the database doesn't already exist
-if [ "$sql_result" != "" ]; then
-  echo "The openvpn-admin database already exists."
-  exit
-fi
+mysql -uroot --password=$mysql_root_pass --database=openvpnadmin -e "INSERT INTO admin (admin_id, admin_pass) VALUES ('${admin_user}', encrypt('${admin_user_pass}'));"
 
+print_out 1 "setting up MySQL OK"
 
-# Check if the user doesn't already exist
-read -p "MySQL user name for OpenVPN-Admin (will be created): " mysql_user
-
-echo "SHOW GRANTS FOR $mysql_user@localhost" | mysql -u root --password="$mysql_root_pass" &> /dev/null
-if [ $? -eq 0 ]; then
-  echo "The MySQL user already exists."
-  exit
-fi
-
-read -p "MySQL user password for OpenVPN-Admin: " -s mysql_pass; echo
-
-# TODO MySQL port & host ?
-
-
-printf "\n################## Certificates informations ##################\n"
-
-read -p "Key size (1024, 2048 or 4096) [2048]: " key_size
-
-read -p "Root certificate expiration (in days) [3650]: " ca_expire
-
-read -p "Certificate expiration (in days) [3650]: " cert_expire
-
-read -p "Country Name (2 letter code) [US]: " cert_country
-
-read -p "State or Province Name (full name) [California]: " cert_province
-
-read -p "Locality Name (eg, city) [San Francisco]: " cert_city
-
-read -p "Organization Name (eg, company) [Copyleft Certificate Co]: " cert_org
-
-read -p "Organizational Unit Name (eg, section) [My Organizational Unit]: " cert_ou
-
-read -p "Email Address [me@example.net]: " cert_email
-
-read -p "Common Name (eg, your name or your server's hostname) [ChangeMe]: " key_cn
-
-
-printf "\n################## Creating the certificates ##################\n"
+print_out i "################## Creating the certificates ##################"
 
 # Get the rsa keys
+cd /opt/
 wget "https://github.com/OpenVPN/easy-rsa/releases/download/v3.0.6/EasyRSA-unix-v3.0.6.tgz"
 tar -xaf "EasyRSA-unix-v3.0.6.tgz"
 mv "EasyRSA-v3.0.6" /etc/openvpn/easy-rsa
-rm "EasyRSA-unix-v3.0.6.tgz"
+#rm "EasyRSA-unix-v3.0.6.tgz"
 
 cd /etc/openvpn/easy-rsa
-
+## This vars read from config.conf, see above in this script
 if [[ ! -z $key_size ]]; then
   export EASYRSA_KEY_SIZE=$key_size
 fi
@@ -166,8 +285,9 @@ fi
 # Generate shared-secret for TLS Authentication
 openvpn --genkey --secret pki/ta.key
 
+print_out 1 "setting up EasyRSA Ok"
 
-printf "\n################## Setup OpenVPN ##################\n"
+print_out i "################## Setup OpenVPN ##################"
 
 # Copy certificates and the server configuration in the openvpn directory
 cp /etc/openvpn/easy-rsa/pki/{ca.crt,ta.key,issued/server.crt,private/server.key,dh.pem} "/etc/openvpn/"
@@ -182,12 +302,14 @@ fi
 nobody_group=$(id -ng nobody)
 sed -i "s/group nogroup/group $nobody_group/" "/etc/openvpn/server.conf"
 
-printf "\n################## Setup firewall ##################\n"
+print_out i "################## Setup firewall ##################"
 
 # Make ip forwading and make it persistent
 echo 1 > "/proc/sys/net/ipv4/ip_forward"
 echo "net.ipv4.ip_forward = 1" >> "/etc/sysctl.conf"
 
+## das ganze iptables Geraffel ist überflüssig - eigentlich - später noch mal testen
+## weil wird eh nirgends gespeichert
 # Get primary NIC device name
 primary_nic=`route | grep '^default' | grep -o '[^ ]*$'`
 
@@ -201,16 +323,7 @@ iptables -t nat -A POSTROUTING -o $primary_nic -j MASQUERADE
 iptables -t nat -A POSTROUTING -s 10.8.0.0/24 -o $primary_nic -j MASQUERADE
 iptables -t nat -A POSTROUTING -s 10.8.0.2/24 -o $primary_nic -j MASQUERADE
 
-
-printf "\n################## Setup MySQL database ##################\n"
-
-echo "CREATE DATABASE \`openvpn-admin\`" | mysql -u root --password="$mysql_root_pass"
-echo "CREATE USER $mysql_user@localhost IDENTIFIED BY '$mysql_pass'" | mysql -u root --password="$mysql_root_pass"
-echo "GRANT ALL PRIVILEGES ON \`openvpn-admin\`.*  TO $mysql_user@localhost" | mysql -u root --password="$mysql_root_pass"
-echo "FLUSH PRIVILEGES" | mysql -u root --password="$mysql_root_pass"
-
-
-printf "\n################## Setup web application ##################\n"
+print_out i "################## Setup web application ##################"
 
 # Copy bash scripts (which will insert row in MySQL)
 cp -r "$base_path/installation/scripts" "/etc/openvpn/"
@@ -218,7 +331,7 @@ chmod +x "/etc/openvpn/scripts/"*
 
 # Configure MySQL in openvpn scripts
 sed -i "s/USER=''/USER='$mysql_user'/" "/etc/openvpn/scripts/config.sh"
-sed -i "s/PASS=''/PASS='$mysql_pass'/" "/etc/openvpn/scripts/config.sh"
+sed -i "s/PASS=''/PASS='$mysql_user_pass'/" "/etc/openvpn/scripts/config.sh"
 
 # Create the directory of the web application
 mkdir "$openvpn_admin"
@@ -229,7 +342,7 @@ cd "$openvpn_admin"
 
 # Replace config.php variables
 sed -i "s/\$user = '';/\$user = '$mysql_user';/" "./include/config.php"
-sed -i "s/\$pass = '';/\$pass = '$mysql_pass';/" "./include/config.php"
+sed -i "s/\$pass = '';/\$pass = '$mysql_user_pass';/" "./include/config.php"
 
 # Replace in the client configurations with the ip of the server and openvpn protocol
 for file in $(find -name client.ovpn); do
@@ -251,15 +364,13 @@ for directory in "./client-conf/gnu-linux/" "./client-conf/osx-viscosity/" "./cl
   cp "/etc/openvpn/"{ca.crt,ta.key} $directory
 done
 
-# Install third parties
+print_out 1 "Setup Web Application done"
+
+print_out i "Install third party module"
 bower --allow-root install
 chown -R "$user:$group" "$openvpn_admin"
 
-printf "\033[1m\n#################################### Finish ####################################\n"
-
-echo -e "# Congratulations, you have successfully setup OpenVPN-Admin! #\r"
-echo -e "Please, finish the installation by configuring your web server (Apache, NGinx...)"
-echo -e "and install the web application by visiting http://your-installation/index.php?installation\r"
-echo -e "Then, you will be able to run OpenVPN with systemctl start openvpn@server\r"
-echo "Please, report any issues here https://github.com/Chocobozzz/OpenVPN-Admin"
-printf "\n################################################################################ \033[0m\n"
+print_out 1 "Finish Installation OpenVPN-Admin"
+print_out i "Please, finish the installation by configuring your web server (Apache, NGinx...)"
+print_out i "Restart your Server after installation please!"
+print_out d "Please, report any issues here https://github.com/wutze/OpenVPN-Admin"
