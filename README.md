@@ -13,30 +13,36 @@ Administrate its OpenVPN with a web interface (logs visualisations, users managi
   * Fresh install of OpenVPN
   * Web server (NGinx, Apache...)
   * MariaDB
-  * PHP >= 5.5 with modules:
+  * PHP >= 7.x with modules:
     * zip
     * pdo_mysql
-  * bower
+  * yarn
   * unzip
   * wget
   * sed
   * curl
+  * git
+  * net-tools (route)
 
 ### Debian 10 Buster
+### Raspberry Pi with Debian 10 Buster
 
 ````
-# apt-get install openvpn apache2 php-mysql mariadb-server php-zip php unzip git wget sed curl git -y
+# apt-get install openvpn apache2 php-mysql mariadb-server php-zip php unzip git wget sed curl git net-tools -y
 # apt install npm nodejs -y
-# npm install -g bower
+# npm install -g yarn
 ````
 
 ## Tests
 
-Only tested on Debian 10/Buster, PHP 7.3.x, 10.3.22-MariaDB.
+  * Only tested on Debian 10/Buster, PHP 7.3.x, 10.3.22-MariaDB.
+  * RaspberryPi 4 with Debian Buster
+
 Feel free to open issues.
 
 ## Installation
 
+  * first setup MySQL-Root PW, you need this
   * Setup OpenVPN and the web application:
 
         $ cd /opt/
