@@ -1,5 +1,11 @@
 # OpenVPN-Admin Version History
 
+## 0.6
+- change bower to yarn
+- now with Web-Setup OpenVPN server.conf
+- Raspeberry Pi with Debian 10 tested
+- Configuration files no longer in web folder
+
 ## 0.5
 - sql files replaced
 - new config.sample file
