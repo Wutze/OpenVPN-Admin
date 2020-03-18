@@ -28,12 +28,12 @@
       } else {
         $conf_dir = 'windows';
       }
-      $rootPath = realpath("./client-conf/$conf_dir");
+      $rootPath = realpath("./../vpn/conf/$conf_dir");
 
       // Initialize archive object ;;;; why doing this every time the user logs in, when the cert is static?
       $archive_base_name = "openvpn-$conf_dir";
       $archive_name = "$archive_base_name.zip";
-      $archive_path = "./client-conf/$archive_name";
+      $archive_path = "./../vpn/conf/$archive_name";
       $zip = new ZipArchive();
       $zip->open($archive_path, ZipArchive::CREATE | ZipArchive::OVERWRITE);
 
