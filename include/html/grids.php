@@ -1,9 +1,27 @@
 <?php
+/**
+ * this File is part of OpenVPN-Admin - (c) 2020 OpenVPN-Admin
+ *
+ * NOTICE OF LICENSE
+ *
+ * GNU AFFERO GENERAL PUBLIC LICENSE V3
+ * that is bundled with this package in the file LICENSE.md.
+ * It is also available through the world-wide-web at this URL:
+ * https://www.gnu.org/licenses/agpl-3.0.en.html
+ *
+ * Original Script from: https://github.com/Chocobozzz/OpenVPN-Admin
+ *
+ * @fork      https://github.com/Wutze/OpenVPN-Admin
+ * @author    Wutze
+ * @copyright 2020 OpenVPN-Admin
+ * @license   https://www.gnu.org/licenses/agpl-3.0.en.html
+ */
+ 
 function getHistory($cfg_file, $accordion_id, $open_first_history_tab = false) {
    ob_start(); ?>
    <h3>History</h3>
    <div class="panel-group" id="accordion<?= $accordion_id ?>">
-      <?php foreach (array_reverse(glob('client-conf/'.basename(pathinfo($cfg_file, PATHINFO_DIRNAME)).'/history/*')) as $i => $file): ?>
+      <?php foreach (array_reverse(glob('../vpn/conf/'.basename(pathinfo($cfg_file, PATHINFO_DIRNAME)).'/history/*')) as $i => $file): ?>
          <div class="panel panel-default">
             <div class="panel-heading">
                <h4 class="panel-title">
@@ -122,25 +140,32 @@ function getHistory($cfg_file, $accordion_id, $open_first_history_tab = false) {
             <li class="active"><a data-toggle="tab" href="#menu-1-0"><span class="glyphicon glyphicon-heart" aria-hidden="true"></span> Linux</a></li>
             <li><a data-toggle="tab" href="#menu-1-1"><span class="glyphicon glyphicon-th-large" aria-hidden="true"></span> Windows</a></li>
             <li><a data-toggle="tab" href="#menu-1-2"><span class="glyphicon glyphicon-apple" aria-hidden="true"></span> OSX</a></li>
+            <li><a data-toggle="tab" href="#menu-1-3"><span class="glyphicon glyphicon-cog" aria-hidden="true"></span> Server Conf</a></li>
 
             <li id="save-config-btn" class="pull-right hidden"><a class="progress-bar-striped" href="javascript:;"><span class="glyphicon glyphicon-save" aria-hidden="true"></span></a></li>
          </ul>
          <div class="tab-content">
             <div id="menu-1-0" class="tab-pane fade in active">
 
-               <textarea class="form-control" data-config-file="<?= $cfg_file='client-conf/gnu-linux/client.ovpn' ?>" name="" id="" cols="30" rows="20"><?= file_get_contents($cfg_file) ?></textarea>
+               <textarea class="form-control" data-config-file="<?= $cfg_file='../vpn/conf/gnu-linux/client.ovpn' ?>" name="" id="" cols="30" rows="20"><?= file_get_contents($cfg_file) ?></textarea>
                <?= getHistory($cfg_file, @++$accId) ?>
 
             </div>
             <div id="menu-1-1" class="tab-pane fade">
 
-               <textarea class="form-control" data-config-file="<?= $cfg_file='client-conf/windows/client.ovpn' ?>" name="" id="" cols="30" rows="20"><?= file_get_contents($cfg_file) ?></textarea>
+               <textarea class="form-control" data-config-file="<?= $cfg_file='../vpn/conf/windows/client.ovpn' ?>" name="" id="" cols="30" rows="20"><?= file_get_contents($cfg_file) ?></textarea>
                <?= getHistory($cfg_file, ++$accId) ?>
 
             </div>
             <div id="menu-1-2" class="tab-pane fade">
 
-               <textarea class="form-control" data-config-file="<?= $cfg_file='client-conf/osx-viscosity/client.ovpn' ?>" name="" id="" cols="30" rows="20"><?= file_get_contents($cfg_file) ?></textarea>
+               <textarea class="form-control" data-config-file="<?= $cfg_file='../vpn/conf/osx-viscosity/client.ovpn' ?>" name="" id="" cols="30" rows="20"><?= file_get_contents($cfg_file) ?></textarea>
+               <?= getHistory($cfg_file, ++$accId) ?>
+
+            </div>
+            <div id="menu-1-3" class="tab-pane fade">
+
+               <textarea class="form-control" data-config-file="<?= $cfg_file='../vpn/conf/server/server.conf' ?>" name="" id="" cols="30" rows="20"><?= file_get_contents($cfg_file) ?></textarea>
                <?= getHistory($cfg_file, ++$accId) ?>
 
             </div>
