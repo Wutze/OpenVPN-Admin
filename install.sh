@@ -55,13 +55,13 @@ fi
 ## Intro with colored Logo
 intro(){
 	echo -e "${COL_LIGHT_RED}
-■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
+■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
 ${COL_BLUE}        ◢■◤
       ◢■◤
     ◢■◤  ${COL_LIGHT_RED}M I C R O - M A D E / H O M E - ${COL_NC}V P N A D M I N${COL_LIGHT_RED} - S E R V E R${COL_BLUE}
-  ◢■◤                                     【ツ】 © 2018-20
-◢■■■■■■■■■■■■■■■■■■■■◤                        ${COL_LIGHT_RED}L   I   N   U   X
-■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■${COL_NC}
+  ◢■◤                                                【ツ】 © 2018-20
+◢■■■■■■■■■■■■■■■■■■■■◤                             ${COL_LIGHT_RED}L   I   N   U   X
+■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■${COL_NC}
 "
 }
 
@@ -155,7 +155,7 @@ if [ "$#" -ne 3 ]; then
 fi
 
 # Ensure there are the prerequisites
-for i in openvpn mysql php bower node unzip wget sed; do
+for i in openvpn mysql php yarn node unzip wget sed; do
   which $i > /dev/null
   if [ "$?" -ne 0 ]; then
     echo "Miss $i"
@@ -335,7 +335,11 @@ sed -i "s/PASS=''/PASS='$mysql_user_pass'/" "/etc/openvpn/scripts/config.sh"
 
 # Create the directory of the web application
 mkdir "$openvpn_admin"
-cp -r "$base_path/"{index.php,sql,bower.json,.bowerrc,js,include,css,installation/client-conf} "$openvpn_admin"
+cp -r "$base_path/"{index.php,package.json,js,include,css} "$openvpn_admin"
+mkdir $www/vpn
+#mkdir $www/vpn/conf
+cp -r "$base_path/"installation/conf $www/vpn/
+ln -s /etc/openvpn/server.conf $www/vpn/conf/server/server.conf
 
 # New workspace
 cd "$openvpn_admin"
@@ -360,15 +364,20 @@ for file in $(find -name client.ovpn); do
 done
 
 # Copy ta.key inside the client-conf directory
-for directory in "./client-conf/gnu-linux/" "./client-conf/osx-viscosity/" "./client-conf/windows/"; do
+for directory in "../vpn/conf/gnu-linux/" "../vpn/conf/osx-viscosity/" "../vpn/conf/windows/"; do
   cp "/etc/openvpn/"{ca.crt,ta.key} $directory
 done
 
 print_out 1 "Setup Web Application done"
 
 print_out i "Install third party module"
-bower --allow-root install
+yarn install
+# backward compatibility to bower in php scripts
+ln -s node_modules vendor
+
 chown -R "$user:$group" "$openvpn_admin"
+chown -R "$user:$group" $www/vpn
+chown "$user:$group" $www/vpn/conf/server/server.conf
 
 print_out 1 "Finish Installation OpenVPN-Admin"
 print_out i "Please, finish the installation by configuring your web server (Apache, NGinx...)"
