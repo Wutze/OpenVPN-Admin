@@ -6,7 +6,7 @@
 # Original Script from: https://github.com/Chocobozzz/OpenVPN-Admin
 # Parts of the programming from pi-hole were used as templates.
 #
-# changes (c) by Wutze 2020 Version 0.5
+# changes (c) by Wutze 2020 Version 0.6
 #
 # Twitter -> @HuWutze
 
@@ -84,10 +84,10 @@ print_help () {
   echo -e "\tgroup:    Group of the web application"
 }
 
-#  
+#
 #  name: control_box
 #  @param $? + Description
-#  @return echo ok or break
+#  @return Message OK or Exit Script
 #  
 control_box(){
   exitstatus=$?
@@ -122,6 +122,19 @@ print_out(){
 			echo "\n"
 		;;
 	esac
+}
+
+#  Intercept and display errors
+#  name: control_script
+#  @param $?
+#  @return continue script or or exit when error with exit 100
+#  
+control_script(){
+  if [ ! $? -eq 0 ]
+  then
+  print_out 0 "Error ${1}"
+  exit 100
+  fi
 }
 
 # you can only install with root privileges
@@ -187,8 +200,15 @@ openvpn_proto=$(whiptail --inputbox "OpenVPN protocol (tcp or udp)\nIf you are u
 control_box $? "VPN Protokoll"
 server_port=$(whiptail --inputbox "OpenVPN Server Port\nDefault Port tcp or udp 1194:" 8 78 1194 --title "Server Port" 3>&1 1>&2 2>&3)
 control_box $? "OpenVPN Port"
-mysql_root_pass=$(whiptail --inputbox "MySQL Root Password\n(The password must not be empty. Please configure this before!)" 8 78 --title "DB Root PW" 3>&1 1>&2 2>&3)
-control_box $? "Root PW"
+
+db_host=$(whiptail --inputbox "MySQL Host\n(localhost, IP or FQDN)\n\nIf you are using an external database server,\nconfigure it previously so that you can enter a user name and password." 8 78 localhost --title "DB Host" 3>&1 1>&2 2>&3)
+control_box $? "DB-Host"
+## If you are using an external database server
+## configure it previously so that you can enter a user name and password.
+if [ "$db_host" == localhost ]; then
+  mysql_root_pass=$(whiptail --inputbox "MySQL Root Password\n(The password must not be empty. Please configure this before!)" 8 78 --title "DB Root PW" 3>&1 1>&2 2>&3)
+  control_box $? "Root PW"
+fi
 
 mysql_user=$(whiptail --inputbox "MySQL Username for OpenVPN Database" 8 78 --title "User DB Name" 3>&1 1>&2 2>&3)
 control_box $? "MySQL Username"
@@ -220,15 +240,18 @@ set_mysql(){
     exit
   fi
    
-  $MYSQL -uroot --password=$mysql_root_pass -e "$SQL"
-
+  $MYSQL -h $db_host $-uroot --password=$mysql_root_pass -e "$SQL"
+  control_script "Create local Database"
 }
 
-set_mysql openvpnadmin $mysql_user $mysql_user_pass
+if [ "$db_host" == localhost ]; then
+  set_mysql openvpnadmin $mysql_user $mysql_user_pass
+fi
 
-mysql -uroot --password=$mysql_root_pass openvpnadmin < sql/vpnadmin.dump
-
-mysql -uroot --password=$mysql_root_pass --database=openvpnadmin -e "INSERT INTO admin (admin_id, admin_pass) VALUES ('${admin_user}', encrypt('${admin_user_pass}'));"
+mysql -h $db_host -u $mysql_user --password=$mysql_user_pass openvpnadmin < sql/vpnadmin.dump
+control_script "Insert Database Dump"
+mysql -h $db_host -u $mysql_user --password=$mysql_user_pass --database=openvpnadmin -e "INSERT INTO admin (admin_id, admin_pass) VALUES ('${admin_user}', encrypt('${admin_user_pass}'));"
+control_script "Insert Webadmin User"
 
 print_out 1 "setting up MySQL OK"
 
@@ -305,11 +328,29 @@ sed -i "s/group nogroup/group $nobody_group/" "/etc/openvpn/server.conf"
 print_out i "################## Setup firewall ##################"
 
 # Make ip forwading and make it persistent
-echo 1 > "/proc/sys/net/ipv4/ip_forward"
-echo "net.ipv4.ip_forward = 1" >> "/etc/sysctl.conf"
 
-## das ganze iptables Geraffel ist überflüssig - eigentlich - später noch mal testen
-## weil wird eh nirgends gespeichert
+echo "
+
+[Unit]
+Description=Firewall Rules
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/bin/bash /usr/sbin/firewall.sh
+TimeoutStartSec=0
+
+[Install]
+WantedBy=default.target
+
+" > /etc/systemd/system/firewall.service
+
+
+echo "#/bin/sh
+export PATH=$PATH:/usr/sbin:/sbin
+
+echo 1 > "/proc/sys/net/ipv4/ip_forward"
+
 # Get primary NIC device name
 primary_nic=`route | grep '^default' | grep -o '[^ ]*$'`
 
@@ -318,10 +359,15 @@ iptables -I FORWARD -i tun0 -j ACCEPT
 iptables -I FORWARD -o tun0 -j ACCEPT
 iptables -I OUTPUT -o tun0 -j ACCEPT
 
-iptables -A FORWARD -i tun0 -o $primary_nic -j ACCEPT
-iptables -t nat -A POSTROUTING -o $primary_nic -j MASQUERADE
-iptables -t nat -A POSTROUTING -s 10.8.0.0/24 -o $primary_nic -j MASQUERADE
-iptables -t nat -A POSTROUTING -s 10.8.0.2/24 -o $primary_nic -j MASQUERADE
+iptables -A FORWARD -i tun0 -o \$primary_nic -j ACCEPT
+iptables -t nat -A POSTROUTING -o \$primary_nic -j MASQUERADE
+iptables -t nat -A POSTROUTING -s 10.8.0.0/24 -o \$primary_nic -j MASQUERADE
+iptables -t nat -A POSTROUTING -s 10.8.0.2/24 -o \$primary_nic -j MASQUERADE
+" > /usr/sbin/firewall.sh
+
+chmod +x /usr/sbin/firewall.sh
+systemctl enable firewall.service
+systemctl start firewall
 
 print_out i "################## Setup web application ##################"
 
@@ -330,6 +376,7 @@ cp -r "$base_path/installation/scripts" "/etc/openvpn/"
 chmod +x "/etc/openvpn/scripts/"*
 
 # Configure MySQL in openvpn scripts
+sed -i "s/HOST=''/HOST='$db_host'/" "/etc/openvpn/scripts/config.sh"
 sed -i "s/USER=''/USER='$mysql_user'/" "/etc/openvpn/scripts/config.sh"
 sed -i "s/PASS=''/PASS='$mysql_user_pass'/" "/etc/openvpn/scripts/config.sh"
 
@@ -345,6 +392,7 @@ ln -s /etc/openvpn/server.conf $www/vpn/conf/server/server.conf
 cd "$openvpn_admin"
 
 # Replace config.php variables
+sed -i "s/\$host = '';/\$host = '$db_host';/" "./include/config.php"
 sed -i "s/\$user = '';/\$user = '$mysql_user';/" "./include/config.php"
 sed -i "s/\$pass = '';/\$pass = '$mysql_user_pass';/" "./include/config.php"
 
