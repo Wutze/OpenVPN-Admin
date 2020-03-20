@@ -240,7 +240,7 @@ set_mysql(){
     exit
   fi
    
-  $MYSQL -h $db_host $-uroot --password=$mysql_root_pass -e "$SQL"
+  $MYSQL -h $db_host -uroot --password=$mysql_root_pass -e "$SQL"
   control_script "Create local Database"
 }
 
