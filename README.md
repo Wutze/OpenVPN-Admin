@@ -49,6 +49,11 @@ Feel free to open issues.
         $ mkdir /srv/www
         $ git clone https://github.com/wutze/OpenVPN-Admin openvpn-admin
         $ cd openvpn-admin
+
+        If you want to use the local database server and need an easy way to set a password, use the script first and follow the instructions
+        $ ./setupmysql.sh
+
+        Beginn main installation
         # ./install.sh /srv/www www-data www-data
 
   * Setup the web server (Apache, NGinx...) to serve the web application.
