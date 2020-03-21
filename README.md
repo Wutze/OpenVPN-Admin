@@ -57,6 +57,24 @@ Feel free to open issues.
         # ./install.sh /srv/www www-data www-data
 
   * Setup the web server (Apache, NGinx...) to serve the web application.
+  * You must reboot the server after installation, otherwise the vpn server will not start correctly and no connection will be established!
+
+  * Finally, create a port forwarding on your Internet Router to this VPN-Server
+
+## OpenVPN-Clients and Documentation to install
+### Apple iOS
+  * https://apps.apple.com/us/app/openvpn-connect/id590379981
+  * Documentation (German) https://www.thomas-krenn.com/de/wiki/IOS_11_als_OpenVPN_Client_konfigurieren
+
+### Android
+  * https://play.google.com/store/apps/details?id=de.blinkt.openvpn&hl=de
+  * Go to download, download the zip file, unzip it into a separate folder, open the OpenVPN app and download the client.conf. Everything else happens automatically. Enter the password and you are ready to go.
+
+### Windows 10
+  * https://openvpn.net/client-connect-vpn-for-windows/
+
+### all
+  * Looks at the configuration of the VPN app. If necessary, adjust the address of your gateway to the VPN server. Most routers can handle a free Dyn-DNS, so you only have to give the name, no IP address.
 
 ## Apache Example
 ````
