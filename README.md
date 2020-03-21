@@ -49,6 +49,10 @@ Feel free to open issues.
         $ mkdir /srv/www
         $ git clone https://github.com/wutze/OpenVPN-Admin openvpn-admin
         $ cd openvpn-admin
+        $ cp config.conf.sample config.conf
+
+        Edit your config.conf e.g. with nano
+        $ nano config.conf
 
         If you want to use the local database server and need an easy way to set a password, use the script first and follow the instructions
         $ ./setupmysql.sh
