@@ -20,3 +20,5 @@ set_mysql_rootpw(){
 	echo "grant all on *.* to root@localhost identified by '$dbpw' with grant option;" | mysql -u root --password="$dbpw"
 	echo "flush privileges;" | mysql -u root --password="$dbpw"
 }
+
+set_mysql_rootpw
