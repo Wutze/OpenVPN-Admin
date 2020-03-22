@@ -60,10 +60,13 @@ Feel free to open issues.
         Beginn main installation
         # ./install.sh /srv/www www-data www-data
 
-  * Setup the web server (Apache, NGinx...) to serve the web application.
+  * Setup the web server (Apache, NGinx...) to serve the web application. Using the example below.
+  
+        $ nano /etc/apache2/sites-enabled/[ apache config]
+  
   * You must reboot the server after installation, otherwise the vpn server will not start correctly and no connection will be established!
 
-  * Finally, create a port forwarding on your Internet Router to this VPN-Server
+  * Finally, create a port forwarding on your Internet Router to this VPN-Server. Check the documentation of the router manufacturer or search the Internet for instructions.
 
 ## OpenVPN-Clients and Documentation to install
 ### Apple iOS
