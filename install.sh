@@ -426,7 +426,8 @@ cd "$openvpn_admin"
 # Replace config.php variables
 sed -i "s/\$host = '';/\$host = '$db_host';/" "./include/config.php"
 sed -i "s/\$user = '';/\$user = '$mysql_user';/" "./include/config.php"
-sed -i "s/\$pass = '';/\$pass = '$mysql_user_pass';/" "./include/config.php"
+escaped=$(echo -n "$mysql_user_pass" | sed 's#\\#\\\\#g;s#&#\\&#g')
+sed -i "s/\$pass = '';/\$pass = '${escaped}';/" "./include/config.php"
 
 # Replace in the client configurations with the ip of the server and openvpn protocol
 for file in $(find ../ -name client.ovpn); do
