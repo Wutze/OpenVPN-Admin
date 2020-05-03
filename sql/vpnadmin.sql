@@ -24,7 +24,7 @@ CREATE TABLE `application` (
 DROP TABLE IF EXISTS `log`;
 CREATE TABLE `log` (
   `log_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-  `user_id` varchar(32) COLLATE utf8_unicode_ci NOT NULL,
+  `user_id` varchar(100) COLLATE utf8_unicode_ci NOT NULL,
   `log_trusted_ip` varchar(32) COLLATE utf8_unicode_ci DEFAULT NULL,
   `log_trusted_port` varchar(16) COLLATE utf8_unicode_ci DEFAULT NULL,
   `log_remote_ip` varchar(32) COLLATE utf8_unicode_ci DEFAULT NULL,
@@ -40,7 +40,7 @@ CREATE TABLE `log` (
 
 DROP TABLE IF EXISTS `user`;
 CREATE TABLE `user` (
-  `user_id` varchar(32) COLLATE utf8_unicode_ci NOT NULL,
+  `user_id` varchar(100) COLLATE utf8_unicode_ci NOT NULL,
   `user_pass` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
   `user_mail` varchar(64) COLLATE utf8_unicode_ci DEFAULT NULL,
   `user_phone` varchar(16) COLLATE utf8_unicode_ci DEFAULT NULL,
