@@ -16,7 +16,7 @@
 #  @return
 #  
 set_mysql_rootpw(){
-	dbpw=$(whiptail --inputbox "Eingabe Datenbankpasswort" 8 78 --title "Create DB-PW" 3>&1 1>&2 2>&3)
+	dbpw=$(whiptail --inputbox "Insert your new database password" 8 78 --title "Create DB-PW" 3>&1 1>&2 2>&3)
 	echo "grant all on *.* to root@localhost identified by '$dbpw' with grant option;" | mysql -u root --password="$dbpw"
 	echo "flush privileges;" | mysql -u root --password="$dbpw"
 }

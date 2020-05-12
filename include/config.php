@@ -1,7 +1,7 @@
 <?php
 	$host = '';
 	$port = '3306';
-	$db   = 'openvpnadmin';
+	$db   = '';
 	$user = '';
 	$pass = '';
 ?>

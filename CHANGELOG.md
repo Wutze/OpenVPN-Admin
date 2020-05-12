@@ -1,5 +1,15 @@
 # OpenVPN-Admin Version History
 
+## 0.7
+- Insert Multilingual Support de_DE and en_EN (Other translations are possible)
+- Largely automated installation
+- fix mysql error without local Server-Installation
+- You can now specify the Database name
+- change color-settings webfrontend openvpn.config
+- insert new Messages and Informations
+- Fix #145 in openvpn/scripts/config.sh
+- Obsolete routines removed
+
 ## 0.6
 - change bower to yarn
 - now with Web-Setup OpenVPN server.conf

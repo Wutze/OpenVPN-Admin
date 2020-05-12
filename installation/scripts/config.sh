@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # MySQL credentials
-HOST='localhost'
+HOST=''
 PORT='3306'
 USER=''
 PASS=''
-DB='openvpnadmin'
+DB=''

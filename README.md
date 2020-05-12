@@ -13,7 +13,7 @@ Administrate its OpenVPN with a web interface (logs visualisations, users managi
   * GNU/Linux with Bash and root access
   * Fresh install of OpenVPN
   * Web server (NGinx, Apache...)
-  * MariaDB
+  * MariaDB (see note MySQL)
   * PHP >= 7.x with modules:
     * zip
     * pdo_mysql
@@ -25,29 +25,45 @@ Administrate its OpenVPN with a web interface (logs visualisations, users managi
   * git
   * net-tools (route)
 
+## Note MySQL
+If you already have a database server, you can also use this one and do not need to install one locally. You only need a database and a username and password
+
 ### Debian 10 Buster
 ### Raspberry Pi with Debian 10 Buster
+### Ubuntu 20.04 Server
 
+## Manual Install with MySQL-Server
 ````
 # apt-get install openvpn apache2 php-mysql mariadb-server php-zip php unzip git wget sed curl git net-tools -y
 # apt install npm nodejs -y
 # npm install -g yarn
 ````
 
-## Tests
+## Manual Install without MySQL-Server
+````
+# apt-get install openvpn default-mysql-client apache2 php-mysql php-zip php unzip git wget sed curl git net-tools -y
+# apt install npm nodejs -y
+# npm install -g yarn
+````
 
-  * Only tested on Debian 10/Buster, PHP 7.3.x, 10.3.22-MariaDB.
+## Automated installation using selection boxes
+````
+# apt-get install git -y
+````
+
+## Tested on:
+
+  * Debian 10/Buster, PHP 7.3.x, 10.3.22-MariaDB.
   * RaspberryPi 4 with Debian Buster
+  * Ubuntu 20.04 Server (Minimal Installation + OpenSSH-Server)
 
 Feel free to open issues.
 
 ## Installation
 
-  * first setup MySQL-Root PW, you need this
   * Setup OpenVPN and the web application:
 
         $ cd /opt/
-        $ mkdir /srv/www
         $ git clone https://github.com/wutze/OpenVPN-Admin openvpn-admin
         $ cd openvpn-admin
         $ cp config.conf.sample config.conf
@@ -55,11 +71,8 @@ Feel free to open issues.
         Edit your config.conf e.g. with nano
         $ nano config.conf
 
-        If you want to use the local database server and need an easy way to set a password, use the script first and follow the instructions
-        $ ./setupmysql.sh
-
         Beginn main installation
-        # ./install.sh /srv/www www-data www-data
+        # ./install.sh
 
   * Setup the web server (Apache, NGinx...) to serve the web application. Using the example below.
   
