@@ -410,6 +410,8 @@ fi
 
 mysql -h $db_host -u $mysql_user --password=$mysql_user_pass $db_name < sql/vpnadmin.dump
 control_script "Insert Database Dump"
+mysql -h $db_host -u $mysql_user --password=$mysql_user_pass $db_name < sql/vpnadmin.sql
+control_script "Insert Userupdate #Fix 102"
 mysql -h $db_host -u $mysql_user --password=$mysql_user_pass --database=$db_name -e "INSERT INTO admin (admin_id, admin_pass) VALUES ('${admin_user}', encrypt('${admin_user_pass}'));"
 control_script "Insert Webadmin User"
 
