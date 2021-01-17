@@ -17,9 +17,12 @@ Example:
 
 # Important note!
 
-The following description still works, but in the meantime it is not recommended because of some serious bugs in the system. Therefore the hint, please use the alternative.
+# The following description still works, but in the meantime it is not recommended because of some serious bugs in the system. Therefore the hint, please use the alternative.
 
-Installation at your own risk!
+# Installation at your own risk!
+
+
+############################
 
 ## Summary
 Administrate its OpenVPN with a web interface (logs visualisations, users managing...) and a SQL database.
